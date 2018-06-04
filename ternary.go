@@ -5,7 +5,10 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type TernaryCounter struct {
 	states, powers []int
@@ -20,9 +23,11 @@ func NewTernaryCounter(n int) *TernaryCounter {
 	c.powers =  make([]int, n)
 	c.total = 0
 	c.counter = 0
+	c.maximum = 0
 	v := 1
 	for i := 0; i < n; i++ {
 		c.powers[i] = v
+		c.maximum += v
 		v *= 3
 	}
 	return c
@@ -30,7 +35,8 @@ func NewTernaryCounter(n int) *TernaryCounter {
 
 func (c TernaryCounter) String() string {
 	var s string
-	s = fmt.Sprintf("Order: %d. Total: %d. Counter: %d", c.order, c.total, c.counter)
+	s = fmt.Sprintf("Order: %d. Total: %d. Counter: %d. Maximum: %d",
+		c.order, c.total, c.counter, c.maximum)
 	s += "\nStates: "
 	for _, t := range c.states {
 		s += fmt.Sprintf("\t%d", t)
@@ -43,7 +49,35 @@ func (c TernaryCounter) String() string {
 	return s
 }
 
+func (c *TernaryCounter) Increment(n int) {
+
+	c.states[n]++
+	if c.states[n] > 1 && n < c.order - 1 {
+		c.states[n] = -1
+		c.Increment(n + 1)
+	}
+
+	if n == 0 {
+		c.counter++
+		c.total = 0
+		for i := 0 ; i < c.order ; i++ {
+			c.total += c.powers[i] * c.states[i]
+		}
+	}
+
+}
+
 func main() {
-	c := NewTernaryCounter(5)
-	fmt.Println(c)
+
+	start := time.Now()
+	c := NewTernaryCounter(25)
+	for i := 0 ; i <= c.maximum ; i++ {
+		c.Increment(0)
+		if c.counter != c.total {
+			fmt.Printf("Error. Bad count\n%v", c)
+		}
+	}
+	elapsed := time.Since(start)
+	fmt.Printf("%d operations in %v seconds (%d per second)",
+		c.maximum, elapsed, int(float64(c.maximum)/elapsed.Seconds()))
 }
